@@ -8,26 +8,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background-color: #f3f4f6; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
-        
-        /* ヘッダーの高さ(64px)分だけ余白を空ける */
         main { padding-top: 80px; padding-bottom: 90px; }
-        
         .view-section { display: none; }
         .view-section.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        /* ローディング */
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         input::-webkit-calendar-picker-indicator { opacity: 100; }
-        
-        /* カレンダー用スタイル */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .calendar-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: start; padding-top: 4px; border-radius: 8px; font-size: 0.8rem; position: relative; cursor: pointer; }
         .calendar-day:hover { background-color: #f3f4f6; }
         .calendar-day.selected { background-color: #eff6ff; border: 2px solid #3b82f6; font-weight: bold; }
         .calendar-day.today { background-color: #fff7ed; border: 1px solid #fdba74; }
         .dot { width: 6px; height: 6px; border-radius: 50%; margin-top: 2px; }
+        /* スライダーのカスタマイズ */
+        input[type=range] { -webkit-appearance: none; width: 100%; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #3b82f6; cursor: pointer; margin-top: -8px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+        input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #e5e7eb; border-radius: 2px; }
     </style>
 </head>
 <body class="text-gray-800 font-sans antialiased">
@@ -56,6 +53,19 @@
                 <div id="autoFillMessage" class="hidden mb-3 bg-indigo-50 text-indigo-700 px-3 py-2 rounded-lg text-xs flex items-center animate-pulse">
                     <i class="fa-solid fa-mobile-screen-button mr-2"></i>外部アプリからデータを読み込みました
                 </div>
+                
+                <div class="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-xs font-bold text-gray-600"><i class="fa-solid fa-bolt mr-1"></i>ストレスレベル</label>
+                        <span id="stressValueDisplay" class="text-sm font-bold text-blue-600 bg-white px-2 py-0.5 rounded border border-blue-100">5</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs text-gray-400">低</span>
+                        <input type="range" id="stressInput" min="1" max="10" value="5" class="flex-1" oninput="updateStressDisplay(this.value)">
+                        <span class="text-xs text-gray-400">高</span>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-2 gap-3 mb-3">
                     <div><label class="block text-xs font-bold text-gray-600 mb-1"><i class="fa-solid fa-bed mr-1"></i>睡眠時間(h)</label><input type="number" id="sleepTime" step="0.5" placeholder="7.0" class="w-full p-2 border border-gray-200 rounded-lg bg-gray-50 text-sm"></div>
                     <div>
@@ -90,20 +100,14 @@
         <section id="view-history" class="view-section">
             <div id="historyStickyTabs" class="sticky top-16 bg-gray-100 z-40 pb-4 pt-1">
                 <div class="flex bg-white rounded-lg shadow-sm p-1">
-                    <button onclick="toggleHistoryView('list')" id="btnViewList" class="flex-1 py-2 text-sm font-bold rounded-md bg-blue-600 text-white transition shadow-sm">
-                        <i class="fa-solid fa-list-ul mr-1"></i>リスト
-                    </button>
-                    <button onclick="toggleHistoryView('calendar')" id="btnViewCalendar" class="flex-1 py-2 text-sm font-bold rounded-md text-gray-500 hover:bg-gray-50 transition">
-                        <i class="fa-solid fa-calendar-days mr-1"></i>カレンダー
-                    </button>
+                    <button onclick="toggleHistoryView('list')" id="btnViewList" class="flex-1 py-2 text-sm font-bold rounded-md bg-blue-600 text-white transition shadow-sm"><i class="fa-solid fa-list-ul mr-1"></i>リスト</button>
+                    <button onclick="toggleHistoryView('calendar')" id="btnViewCalendar" class="flex-1 py-2 text-sm font-bold rounded-md text-gray-500 hover:bg-gray-50 transition"><i class="fa-solid fa-calendar-days mr-1"></i>カレンダー</button>
                 </div>
             </div>
-
             <div class="bg-white rounded-xl shadow-sm p-5 mb-6 z-0">
                 <h2 class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 flex items-center"><i class="fa-solid fa-chart-simple mr-2"></i>成分ランキング (TOP 5)</h2>
                 <div id="statsContainer" class="space-y-3"></div>
             </div>
-
             <div id="calendarContainer" class="hidden bg-white rounded-xl shadow-sm p-4 mb-6">
                 <div class="flex justify-between items-center mb-4">
                     <button onclick="changeMonth(-1)" class="text-gray-400 hover:text-blue-600 p-2"><i class="fa-solid fa-chevron-left"></i></button>
@@ -120,7 +124,6 @@
                     <div class="flex items-center"><div class="dot bg-blue-400 mr-1"></div>ログのみ</div>
                 </div>
             </div>
-
             <h2 id="historyListTitle" class="text-sm font-bold text-gray-500 uppercase tracking-wide mb-4 pl-2">記録ログ</h2>
             <div id="historyList" class="space-y-4"></div>
         </section>
@@ -133,7 +136,7 @@
                 <div class="mb-8 pt-6 border-t border-gray-100"><label class="block text-sm font-bold mb-2 text-gray-700">保存された薬リスト</label><p class="text-xs text-gray-400 mb-2">「記録」ボタンを押すと、新しい薬の名前が自動でここに保存されます。</p><div class="flex gap-2"><button onclick="clearMedicationHistory()" class="text-xs bg-red-50 text-red-600 font-bold px-3 py-2 rounded-lg hover:bg-red-100 transition"><i class="fa-solid fa-eraser mr-1"></i>薬リストをリセット</button></div></div>
                 <button onclick="saveSettings()" class="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded-xl transition">設定を保存して戻る</button>
             </div>
-            <div class="p-4 rounded-xl text-sm text-gray-500 text-center"><p>© 2024 Gastro Log v3.2</p></div>
+            <div class="p-4 rounded-xl text-sm text-gray-500 text-center"><p>© 2024 Gastro Log v3.3</p></div>
         </section>
     </main>
 
@@ -147,11 +150,7 @@
 
     <script>
         let currentBase64 = null; let currentIngredients = []; let isManualModelMode = false;
-        // カレンダー用
-        let currentYear = new Date().getFullYear();
-        let currentMonth = new Date().getMonth();
-        let currentViewMode = 'list';
-        let selectedDate = null;
+        let currentYear = new Date().getFullYear(); let currentMonth = new Date().getMonth(); let currentViewMode = 'list'; let selectedDate = null;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadSettings();
@@ -159,7 +158,11 @@
             checkAnalyzeable(); checkUrlParams(); loadMedicationHistory();
         });
 
-        // --- URL params ---
+        // --- ストレス値の表示更新 ---
+        function updateStressDisplay(val) {
+            document.getElementById('stressValueDisplay').textContent = val;
+        }
+
         function checkUrlParams() {
             const params = new URLSearchParams(window.location.search);
             let hasData = false;
@@ -167,6 +170,13 @@
             if (params.has('quality')) { document.getElementById('sleepQuality').value = params.get('quality'); hasData = true; }
             if (params.has('steps')) { document.getElementById('stepsInput').value = params.get('steps'); hasData = true; }
             if (params.has('exercise')) { document.getElementById('exerciseInput').value = params.get('exercise'); hasData = true; }
+            // ★ストレスパラメータ
+            if (params.has('stress')) { 
+                const s = params.get('stress');
+                document.getElementById('stressInput').value = s; 
+                updateStressDisplay(s);
+                hasData = true; 
+            }
             if (hasData) { document.getElementById('autoFillMessage').classList.remove('hidden'); window.history.replaceState({}, document.title, window.location.pathname); }
         }
 
@@ -176,123 +186,73 @@
             document.getElementById(`view-${viewName}`).classList.add('active');
             updateNavStyles(viewName); window.scrollTo(0, 0);
 
-            if(viewName === 'history') { 
-                if (currentViewMode === 'calendar') {
-                    renderCalendar();
-                    renderHistory(selectedDate);
-                } else {
-                    renderHistory();
-                }
+            const stickyTabs = document.getElementById('historyStickyTabs');
+            if (viewName === 'history') {
+                stickyTabs.classList.remove('hidden');
+                if (currentViewMode === 'calendar') { renderCalendar(); renderHistory(selectedDate); } else { renderHistory(); }
                 updateStats();
-            }
+            } else { stickyTabs.classList.add('hidden'); }
         }
         function updateNavStyles(activeView) {
-            const icons = { analyze: 0, history: 1, settings: 2 };
-            const navBtns = document.querySelectorAll('.nav-btn');
-            navBtns.forEach(btn => btn.classList.remove('text-blue-600', 'text-gray-400'));
-            navBtns.forEach(btn => btn.classList.add('text-gray-400'));
+            const icons = { analyze: 0, history: 1, settings: 2 }; const navBtns = document.querySelectorAll('.nav-btn');
+            navBtns.forEach(btn => btn.classList.remove('text-blue-600', 'text-gray-400')); navBtns.forEach(btn => btn.classList.add('text-gray-400'));
             if(navBtns[icons[activeView]]) { navBtns[icons[activeView]].classList.remove('text-gray-400'); navBtns[icons[activeView]].classList.add('text-blue-600'); }
         }
 
         // --- Toggle History View ---
         function toggleHistoryView(mode) {
             currentViewMode = mode;
-            const btnList = document.getElementById('btnViewList');
-            const btnCal = document.getElementById('btnViewCalendar');
-            const calContainer = document.getElementById('calendarContainer');
-            const listTitle = document.getElementById('historyListTitle');
-
+            const btnList = document.getElementById('btnViewList'); const btnCal = document.getElementById('btnViewCalendar');
+            const calContainer = document.getElementById('calendarContainer'); const listTitle = document.getElementById('historyListTitle');
             if (mode === 'calendar') {
-                btnList.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
-                btnList.classList.add('text-gray-500', 'hover:bg-gray-50');
-                btnCal.classList.remove('text-gray-500', 'hover:bg-gray-50');
-                btnCal.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
-                
-                calContainer.classList.remove('hidden');
-                renderCalendar();
-                renderHistory(selectedDate);
+                btnList.classList.remove('bg-blue-600', 'text-white', 'shadow-sm'); btnList.classList.add('text-gray-500', 'hover:bg-gray-50');
+                btnCal.classList.remove('text-gray-500', 'hover:bg-gray-50'); btnCal.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+                calContainer.classList.remove('hidden'); renderCalendar(); renderHistory(selectedDate);
                 listTitle.textContent = selectedDate ? `${selectedDate.getMonth()+1}/${selectedDate.getDate()} のログ` : "ログ一覧";
             } else {
-                btnCal.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
-                btnCal.classList.add('text-gray-500', 'hover:bg-gray-50');
-                btnList.classList.remove('text-gray-500', 'hover:bg-gray-50');
-                btnList.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
-
-                calContainer.classList.add('hidden');
-                selectedDate = null;
-                renderHistory(null);
-                listTitle.textContent = "ログ一覧";
+                btnCal.classList.remove('bg-blue-600', 'text-white', 'shadow-sm'); btnCal.classList.add('text-gray-500', 'hover:bg-gray-50');
+                btnList.classList.remove('text-gray-500', 'hover:bg-gray-50'); btnList.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+                calContainer.classList.add('hidden'); selectedDate = null; renderHistory(null); listTitle.textContent = "ログ一覧";
             }
         }
 
         // --- Calendar Logic ---
         function renderCalendar() {
-            const grid = document.getElementById('calendarGrid');
-            const title = document.getElementById('calendarTitle');
-            grid.innerHTML = '';
-            title.textContent = `${currentYear}年 ${currentMonth + 1}月`;
-            const firstDay = new Date(currentYear, currentMonth, 1);
-            const lastDay = new Date(currentYear, currentMonth + 1, 0);
-            const daysInMonth = lastDay.getDate();
-            const startDayOfWeek = firstDay.getDay(); 
-            const history = JSON.parse(localStorage.getItem('food_history') || '[]');
-            const today = new Date();
-
+            const grid = document.getElementById('calendarGrid'); const title = document.getElementById('calendarTitle');
+            grid.innerHTML = ''; title.textContent = `${currentYear}年 ${currentMonth + 1}月`;
+            const firstDay = new Date(currentYear, currentMonth, 1); const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate(); const startDayOfWeek = firstDay.getDay(); 
+            const history = JSON.parse(localStorage.getItem('food_history') || '[]'); const today = new Date();
             for (let i = 0; i < startDayOfWeek; i++) { grid.appendChild(document.createElement('div')); }
             for (let d = 1; d <= daysInMonth; d++) {
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'calendar-day';
-                dayDiv.textContent = d;
+                const dayDiv = document.createElement('div'); dayDiv.className = 'calendar-day'; dayDiv.textContent = d;
                 const thisDate = new Date(currentYear, currentMonth, d);
-                
                 if (thisDate.toDateString() === today.toDateString()) dayDiv.classList.add('today');
                 if (selectedDate && thisDate.toDateString() === selectedDate.toDateString()) dayDiv.classList.add('selected');
-
-                const dayLogs = history.filter(item => {
-                    const logDate = new Date(item.id);
-                    return logDate.toDateString() === thisDate.toDateString();
-                });
-
+                const dayLogs = history.filter(item => { const logDate = new Date(item.id); return logDate.toDateString() === thisDate.toDateString(); });
                 if (dayLogs.length > 0) {
-                    const dot = document.createElement('div');
-                    dot.className = 'dot';
+                    const dot = document.createElement('div'); dot.className = 'dot';
                     const hasWarning = dayLogs.some(item => item.ingredients && item.ingredients.length > 0);
                     const hasSafeFood = dayLogs.some(item => item.ingredients && item.ingredients.length === 0 && (item.image || item.memo));
-                    if (hasWarning) dot.classList.add('bg-red-500');
-                    else if (hasSafeFood) dot.classList.add('bg-green-500');
-                    else dot.classList.add('bg-blue-400');
+                    if (hasWarning) dot.classList.add('bg-red-500'); else if (hasSafeFood) dot.classList.add('bg-green-500'); else dot.classList.add('bg-blue-400');
                     dayDiv.appendChild(dot);
                 }
                 dayDiv.onclick = () => {
-                    if (selectedDate && selectedDate.toDateString() === thisDate.toDateString()) selectedDate = null;
-                    else selectedDate = new Date(currentYear, currentMonth, d);
-                    renderCalendar();
-                    renderHistory(selectedDate);
-                    const listTitle = document.getElementById('historyListTitle');
-                    listTitle.textContent = selectedDate ? `${currentMonth + 1}/${d} のログ` : "ログ一覧";
+                    if (selectedDate && selectedDate.toDateString() === thisDate.toDateString()) selectedDate = null; else selectedDate = new Date(currentYear, currentMonth, d);
+                    renderCalendar(); renderHistory(selectedDate);
+                    const listTitle = document.getElementById('historyListTitle'); listTitle.textContent = selectedDate ? `${currentMonth + 1}/${d} のログ` : "ログ一覧";
                 };
                 grid.appendChild(dayDiv);
             }
         }
-        function changeMonth(delta) {
-            currentMonth += delta;
-            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-            else if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-            renderCalendar();
-        }
+        function changeMonth(delta) { currentMonth += delta; if (currentMonth > 11) { currentMonth = 0; currentYear++; } else if (currentMonth < 0) { currentMonth = 11; currentYear--; } renderCalendar(); }
 
         // --- Render History ---
         function renderHistory(filterDate = null) {
             const rawHistory = JSON.parse(localStorage.getItem('food_history') || '[]');
-            const listContainer = document.getElementById('historyList');
-            listContainer.innerHTML = '';
+            const listContainer = document.getElementById('historyList'); listContainer.innerHTML = '';
             let history = rawHistory;
-            if (filterDate) {
-                history = rawHistory.filter(item => {
-                    const d = new Date(item.id);
-                    return d.toDateString() === filterDate.toDateString();
-                });
-            }
+            if (filterDate) { history = rawHistory.filter(item => { const d = new Date(item.id); return d.toDateString() === filterDate.toDateString(); }); }
             if (history.length === 0) { listContainer.innerHTML = `<div class="text-center text-gray-400 py-10 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200"><i class="fa-solid fa-utensils text-3xl mb-2 opacity-50"></i><p class="text-sm">記録はありません</p></div>`; return; }
 
             history.forEach(item => {
@@ -300,8 +260,19 @@
                 let lifeLogHtml = ''; const life = item.life || {};
                 if (life.sleepTime) { const qMap = { good: '良', normal: '普', bad: '悪' }; const qText = qMap[life.sleepQuality] ? `(${qMap[life.sleepQuality]})` : ''; lifeLogHtml += `<span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded mr-2 mb-1 inline-block"><i class="fa-solid fa-bed mr-1"></i>${life.sleepTime}h ${qText}</span>`; }
                 if (life.steps) { lifeLogHtml += `<span class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded mr-2 mb-1 inline-block"><i class="fa-solid fa-shoe-prints mr-1"></i>${life.steps}歩</span>`; }
+                
+                // ★ストレス表示
+                if (life.stress) {
+                    const s = parseInt(life.stress);
+                    let color = 'bg-green-50 text-green-700';
+                    if(s >= 4) color = 'bg-yellow-50 text-yellow-700';
+                    if(s >= 8) color = 'bg-red-50 text-red-700';
+                    lifeLogHtml += `<span class="text-xs ${color} px-2 py-1 rounded mr-2 mb-1 inline-block font-bold"><i class="fa-solid fa-bolt mr-1"></i>Lv.${s}</span>`;
+                }
+
                 if (life.exercise) { lifeLogHtml += `<span class="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded mr-2 mb-1 inline-block"><i class="fa-solid fa-person-running mr-1"></i>${life.exercise}</span>`; }
                 if (life.medication) { lifeLogHtml += `<span class="text-xs text-teal-600 bg-teal-50 px-2 py-1 rounded mr-2 mb-1 inline-block"><i class="fa-solid fa-pills mr-1"></i>${life.medication}</span>`; }
+                
                 const imageHtml = item.image ? `<img src="${item.image}" class="w-20 h-20 object-cover rounded-lg bg-gray-200 border border-gray-100">` : `<div class="w-20 h-20 bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center text-gray-300"><i class="fa-solid fa-notes-medical text-2xl"></i></div>`;
                 const memoHtml = item.memo ? `<p class="text-xs text-gray-600 mt-2 bg-gray-50 p-2 rounded border border-gray-100"><i class="fa-regular fa-comment mr-1 text-gray-400"></i>${item.memo}</p>` : '';
                 const html = `<div class="bg-white rounded-xl shadow-sm p-4 relative"><button onclick="deleteLog(${item.id})" class="absolute top-3 right-3 text-gray-300 hover:text-red-500 p-1"><i class="fa-solid fa-trash-can"></i></button><div class="flex gap-4 items-start mb-2">${imageHtml}<div class="flex-1 min-w-0 pt-1"><p class="text-xs text-gray-400 mb-1.5 flex items-center"><i class="fa-regular fa-clock mr-1"></i>${item.date}</p><div class="flex flex-wrap gap-1.5 mb-2">${tagsHtml}</div><div class="flex flex-wrap gap-y-1">${lifeLogHtml}</div></div></div>${memoHtml}</div>`;
@@ -309,51 +280,19 @@
             });
         }
 
-        // --- Basic Functions ---
-        function loadMedicationHistory() {
-            const list = JSON.parse(localStorage.getItem('medication_history') || '[]');
-            const datalist = document.getElementById('medicationHistoryList'); datalist.innerHTML = '';
-            list.forEach(item => { const option = document.createElement('option'); option.value = item; datalist.appendChild(option); });
-        }
-        function addToMedicationHistory(text) {
-            if(!text) return; let list = JSON.parse(localStorage.getItem('medication_history') || '[]');
-            if (!list.includes(text)) { list.push(text); localStorage.setItem('medication_history', JSON.stringify(list)); loadMedicationHistory(); }
-        }
-        function clearMedicationHistory() { if(!confirm('薬リストを削除しますか？')) return; localStorage.removeItem('medication_history'); loadMedicationHistory(); alert('削除しました'); }
-        function saveSettings() {
-            const key = document.getElementById('apiKeyInput').value.trim();
-            let model; if (isManualModelMode) model = document.getElementById('modelInput').value.trim(); else model = document.getElementById('modelSelect').value;
-            if(!key) { alert('APIキーを入力してください'); return; } if(!model) { alert('モデルを選択してください'); return; }
-            localStorage.setItem('gemini_api_key', key); localStorage.setItem('gemini_model', model); alert('保存しました'); switchView('analyze');
-        }
-        function loadSettings() {
-            const key = localStorage.getItem('gemini_api_key'); const model = localStorage.getItem('gemini_model');
-            if(key) document.getElementById('apiKeyInput').value = key;
-            if (model) { const select = document.getElementById('modelSelect'); const optionExists = Array.from(select.options).some(opt => opt.value === model); if (optionExists) select.value = model; else { toggleModelInputMode(true); document.getElementById('modelInput').value = model; } } else { document.getElementById('modelSelect').value = "gemini-2.5-flash"; }
-        }
-        function toggleModelInputMode(forceManual = null) {
-            const selectContainer = document.getElementById('modelSelectContainer'); const inputContainer = document.getElementById('modelInputContainer');
-            if (forceManual === null) isManualModelMode = !isManualModelMode; else isManualModelMode = forceManual;
-            if (isManualModelMode) { selectContainer.classList.add('hidden'); inputContainer.classList.remove('hidden'); } else { selectContainer.classList.remove('hidden'); inputContainer.classList.add('hidden'); }
-        }
+        // --- Common ---
+        function loadMedicationHistory() { const list = JSON.parse(localStorage.getItem('medication_history') || '[]'); const datalist = document.getElementById('medicationHistoryList'); datalist.innerHTML = ''; list.forEach(item => { const option = document.createElement('option'); option.value = item; datalist.appendChild(option); }); }
+        function addToMedicationHistory(text) { if(!text) return; let list = JSON.parse(localStorage.getItem('medication_history') || '[]'); if (!list.includes(text)) { list.push(text); localStorage.setItem('medication_history', JSON.stringify(list)); loadMedicationHistory(); } }
+        function clearMedicationHistory() { if(!confirm('削除しますか？')) return; localStorage.removeItem('medication_history'); loadMedicationHistory(); }
+        function saveSettings() { const key = document.getElementById('apiKeyInput').value.trim(); let model; if (isManualModelMode) model = document.getElementById('modelInput').value.trim(); else model = document.getElementById('modelSelect').value; if(!key || !model) { alert('未入力です'); return; } localStorage.setItem('gemini_api_key', key); localStorage.setItem('gemini_model', model); alert('保存しました'); switchView('analyze'); }
+        function loadSettings() { const key = localStorage.getItem('gemini_api_key'); const model = localStorage.getItem('gemini_model'); if(key) document.getElementById('apiKeyInput').value = key; if (model) { const select = document.getElementById('modelSelect'); const optionExists = Array.from(select.options).some(opt => opt.value === model); if (optionExists) select.value = model; else { toggleModelInputMode(true); document.getElementById('modelInput').value = model; } } else { document.getElementById('modelSelect').value = "gemini-2.5-flash"; } }
+        function toggleModelInputMode(forceManual = null) { const selectContainer = document.getElementById('modelSelectContainer'); const inputContainer = document.getElementById('modelInputContainer'); if (forceManual === null) isManualModelMode = !isManualModelMode; else isManualModelMode = forceManual; if (isManualModelMode) { selectContainer.classList.add('hidden'); inputContainer.classList.remove('hidden'); } else { selectContainer.classList.remove('hidden'); inputContainer.classList.add('hidden'); } }
         async function fetchModels() {
             const apiKey = document.getElementById('apiKeyInput').value.trim(); const statusEl = document.getElementById('modelFetchStatus'); const selectEl = document.getElementById('modelSelect'); const btn = document.getElementById('fetchModelsBtn');
-            if (!apiKey) { alert('APIキーを入力してください'); return; }
-            statusEl.textContent = '取得中(v1beta)...'; statusEl.className = 'text-xs text-blue-500 mt-2 animate-pulse'; btn.disabled = true;
-            try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
-                const res = await fetch(url); if(!res.ok) throw new Error(`Error: ${res.status}`);
-                const data = await res.json();
-                const availableModels = data.models.filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")).map(m => m.name.replace('models/', '')).sort();
-                selectEl.innerHTML = ''; availableModels.forEach(modelName => { const option = document.createElement('option'); option.value = modelName; option.textContent = modelName; if(modelName.includes('gemini-3')||modelName.includes('pro-preview')) option.textContent+=' 🚀'; else if(modelName.includes('flash')) option.textContent+=' ⚡'; selectEl.appendChild(option); });
-                const best = availableModels.find(m => m.includes('2.5-flash')) || availableModels[0]; selectEl.value = best;
-                if (isManualModelMode) toggleModelInputMode(false); statusEl.textContent = `完了: ${availableModels.length}件`; statusEl.className = 'text-xs text-green-600 mt-2';
-            } catch (e) { console.error(e); statusEl.textContent = '失敗'; statusEl.className = 'text-xs text-red-500 mt-2'; alert('取得失敗'); } finally { btn.disabled = false; }
+            if (!apiKey) { alert('APIキーを入力してください'); return; } statusEl.textContent = '取得中(v1beta)...'; statusEl.className = 'text-xs text-blue-500 mt-2 animate-pulse'; btn.disabled = true;
+            try { const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`; const res = await fetch(url); if(!res.ok) throw new Error(`Error: ${res.status}`); const data = await res.json(); const availableModels = data.models.filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")).map(m => m.name.replace('models/', '')).sort(); selectEl.innerHTML = ''; availableModels.forEach(modelName => { const option = document.createElement('option'); option.value = modelName; option.textContent = modelName; if(modelName.includes('gemini-3')||modelName.includes('pro-preview')) option.textContent+=' 🚀'; else if(modelName.includes('flash')) option.textContent+=' ⚡'; selectEl.appendChild(option); }); const best = availableModels.find(m => m.includes('2.5-flash')) || availableModels[0]; selectEl.value = best; if (isManualModelMode) toggleModelInputMode(false); statusEl.textContent = `完了: ${availableModels.length}件`; statusEl.className = 'text-xs text-green-600 mt-2'; } catch (e) { console.error(e); statusEl.textContent = '失敗'; statusEl.className = 'text-xs text-red-500 mt-2'; alert('取得失敗'); } finally { btn.disabled = false; }
         }
-        function handleImageSelect(event) {
-            const file = event.target.files[0]; if (!file) return;
-            resizeImage(file).then(resizedBase64 => { currentBase64 = resizedBase64; const imgEl = document.getElementById('previewImage'); imgEl.src = currentBase64; imgEl.classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); document.getElementById('removeImageBtn').classList.remove('hidden'); document.getElementById('imageUploadLabel').classList.add('border-blue-500'); checkAnalyzeable(); document.getElementById('resultArea').classList.add('hidden'); }); event.target.value = '';
-        }
+        function handleImageSelect(event) { const file = event.target.files[0]; if (!file) return; resizeImage(file).then(resizedBase64 => { currentBase64 = resizedBase64; const imgEl = document.getElementById('previewImage'); imgEl.src = currentBase64; imgEl.classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); document.getElementById('removeImageBtn').classList.remove('hidden'); document.getElementById('imageUploadLabel').classList.add('border-blue-500'); checkAnalyzeable(); document.getElementById('resultArea').classList.add('hidden'); }); event.target.value = ''; }
         function removeImage(event) { event.preventDefault(); currentBase64 = null; document.getElementById('previewImage').src = ''; document.getElementById('previewImage').classList.add('hidden'); document.getElementById('uploadPlaceholder').classList.remove('hidden'); document.getElementById('removeImageBtn').classList.add('hidden'); document.getElementById('imageUploadLabel').classList.remove('border-blue-500'); checkAnalyzeable(); }
         function checkAnalyzeable() { const text = document.getElementById('textInput').value.trim(); document.getElementById('analyzeBtn').disabled = !(currentBase64 || text.length > 0); }
         function resizeImage(file, maxWidth = 800) { return new Promise((resolve) => { const img = new Image(); img.src = URL.createObjectURL(file); img.onload = () => { const canvas = document.createElement('canvas'); let w = img.width, h = img.height; if (w > maxWidth) { h = Math.round(h * (maxWidth / w)); w = maxWidth; } canvas.width = w; canvas.height = h; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, w, h); resolve(canvas.toDataURL('image/jpeg', 0.7)); }; }); }
@@ -369,15 +308,16 @@
         function displayResults(ingredients) { const container = document.getElementById('tagsContainer'); container.innerHTML = ''; if (!ingredients || ingredients.length === 0) { container.innerHTML = '<span class="text-gray-500 text-sm">特になし</span>'; } else { ingredients.forEach(tag => { const span = document.createElement('span'); span.className = 'bg-red-100 text-red-700 text-sm font-semibold px-3 py-1 rounded-full'; span.textContent = tag; container.appendChild(span); }); } document.getElementById('resultArea').classList.remove('hidden'); }
         function saveLog(isAnalyzed) {
             if (!isAnalyzed) currentIngredients = [];
-            const sleepTime = document.getElementById('sleepTime').value; const sleepQuality = document.getElementById('sleepQuality').value; const medication = document.getElementById('medicationInput').value.trim(); const exercise = document.getElementById('exerciseInput').value.trim(); const steps = document.getElementById('stepsInput').value; const textMemo = document.getElementById('textInput').value.trim();
+            const sleepTime = document.getElementById('sleepTime').value; const sleepQuality = document.getElementById('sleepQuality').value; const medication = document.getElementById('medicationInput').value.trim(); const exercise = document.getElementById('exerciseInput').value.trim(); const steps = document.getElementById('stepsInput').value; const stress = document.getElementById('stressInput').value; const textMemo = document.getElementById('textInput').value.trim();
             if (!currentBase64 && !textMemo && !sleepTime && !medication && !exercise && !steps) { alert('記録内容がありません'); return; }
             if (medication) addToMedicationHistory(medication);
-            const newLog = { id: Date.now(), date: new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit' }), image: currentBase64, memo: textMemo, ingredients: currentIngredients, life: { sleepTime, sleepQuality, medication, exercise, steps } };
+            const newLog = { id: Date.now(), date: new Date().toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit' }), image: currentBase64, memo: textMemo, ingredients: currentIngredients, life: { sleepTime, sleepQuality, medication, exercise, steps, stress } };
             let history = JSON.parse(localStorage.getItem('food_history') || '[]'); history.unshift(newLog); history = history.slice(0, 50);
             try { localStorage.setItem('food_history', JSON.stringify(history)); alert('記録しました'); resetAnalyzeView(); switchView('history'); } catch (e) { alert('容量上限です。古い履歴を削除してください。'); }
         }
         function resetAnalyzeView() {
-            currentBase64 = null; currentIngredients = []; document.getElementById('textInput').value = ''; document.getElementById('sleepTime').value = ''; document.getElementById('sleepQuality').value = ''; document.getElementById('medicationInput').value = ''; document.getElementById('exerciseInput').value = ''; document.getElementById('stepsInput').value = '';
+            currentBase64 = null; currentIngredients = []; document.getElementById('textInput').value = ''; document.getElementById('sleepTime').value = ''; document.getElementById('sleepQuality').value = ''; document.getElementById('medicationInput').value = ''; document.getElementById('exerciseInput').value = ''; document.getElementById('stepsInput').value = ''; 
+            document.getElementById('stressInput').value = 5; updateStressDisplay(5);
             removeImage(new Event('click')); document.getElementById('actionButtons').classList.remove('hidden'); document.getElementById('analyzeBtn').disabled = true; document.getElementById('resultArea').classList.add('hidden'); document.getElementById('autoFillMessage').classList.add('hidden');
         }
         function deleteLog(id) { if(!confirm('削除しますか？')) return; let history = JSON.parse(localStorage.getItem('food_history') || '[]'); history = history.filter(item => item.id !== id); localStorage.setItem('food_history', JSON.stringify(history)); renderCalendar(); renderHistory(selectedDate); updateStats(); }

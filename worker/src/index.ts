@@ -82,20 +82,13 @@ export default {
         try {
             // ====== Auth Routes ======
             if (path === '/api/auth/google') {
-                // Google OAuth 開始
-                const supabase = getAdminClient(env);
+                // Google OAuth 開始 - Supabase OAuth URL を手動構築
                 const redirectTo = `${url.origin}/api/auth/callback`;
+                const oauthUrl = new URL(`${env.SUPABASE_URL}/auth/v1/authorize`);
+                oauthUrl.searchParams.set('provider', 'google');
+                oauthUrl.searchParams.set('redirect_to', redirectTo);
 
-                const { data, error } = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: { redirectTo }
-                });
-
-                if (error || !data.url) {
-                    return jsonResponse({ error: 'OAuth failed' }, 500, origin, env);
-                }
-
-                return Response.redirect(data.url, 302);
+                return Response.redirect(oauthUrl.toString(), 302);
             }
 
             if (path === '/api/auth/callback') {

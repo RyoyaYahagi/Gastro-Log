@@ -3,7 +3,7 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 
 [vars]
-FRONTEND_URL = "https://gastro-log-api.yhgry.workers.dev"
+FRONTEND_URL = "null"
 
 # Secrets (set via `wrangler secret put`):
 # - SUPABASE_URL

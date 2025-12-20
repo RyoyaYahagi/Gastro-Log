@@ -450,6 +450,12 @@
                     <div class="relative"><input type="password" id="apiKeyInput" placeholder="AIzaSy..."
                             class="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"><i
                             class="fa-solid fa-key absolute top-3.5 right-3 text-gray-300"></i></div>
+                    <p class="text-xs text-gray-500 mt-2">
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer"
+                            class="text-blue-600 hover:underline">
+                            <i class="fa-solid fa-external-link-alt mr-1"></i>Google AI Studio
+                        </a>で無料で取得できます。「APIキーを作成」をクリックしてコピーしてください。
+                    </p>
                 </div>
                 <div class="mb-6"><label for="modelSelect"
                         class="block text-sm font-bold mb-2 text-gray-700">使用モデル</label>
@@ -1020,7 +1026,79 @@
         function saveSettings() { const key = document.getElementById('apiKeyInput').value.trim(); let model; if (isManualModelMode) model = document.getElementById('modelInput').value.trim(); else model = document.getElementById('modelSelect').value; if (!key || !model) { showToast('未入力の項目があります', 'warning'); return; } localStorage.setItem('gemini_api_key', key); localStorage.setItem('gemini_model', model); showToast('設定を保存しました', 'success'); switchView('analyze'); }
         function loadSettings() { const key = localStorage.getItem('gemini_api_key'); const model = localStorage.getItem('gemini_model'); if (key) document.getElementById('apiKeyInput').value = key; if (model) { const select = document.getElementById('modelSelect'); const optionExists = Array.from(select.options).some(opt => opt.value === model); if (optionExists) select.value = model; else { toggleModelInputMode(true); document.getElementById('modelInput').value = model; } } else { document.getElementById('modelSelect').value = "gemini-2.5-flash"; } }
         function toggleModelInputMode(forceManual = null) { const selectContainer = document.getElementById('modelSelectContainer'); const inputContainer = document.getElementById('modelInputContainer'); if (forceManual === null) isManualModelMode = !isManualModelMode; else isManualModelMode = forceManual; if (isManualModelMode) { selectContainer.classList.add('hidden'); inputContainer.classList.remove('hidden'); } else { selectContainer.classList.remove('hidden'); inputContainer.classList.add('hidden'); } }
-        async function fetchModels() { const apiKey = document.getElementById('apiKeyInput').value.trim(); const statusEl = document.getElementById('modelFetchStatus'); const selectEl = document.getElementById('modelSelect'); const btn = document.getElementById('fetchModelsBtn'); if (!apiKey) { showToast('APIキーを入力してください', 'warning'); return; } statusEl.textContent = '取得中(v1beta)...'; statusEl.className = 'text-xs text-blue-500 mt-2 animate-pulse'; btn.disabled = true; try { const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`; const res = await fetch(url); if (!res.ok) throw new Error(`Error: ${res.status}`); const data = await res.json(); const availableModels = data.models.filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")).map(m => m.name.replace('models/', '')).sort(); selectEl.innerHTML = ''; availableModels.forEach(modelName => { const option = document.createElement('option'); option.value = modelName; option.textContent = modelName; if (modelName.includes('gemini-3') || modelName.includes('pro-preview')) option.textContent += ' 🚀'; else if (modelName.includes('flash')) option.textContent += ' ⚡'; selectEl.appendChild(option); }); const best = availableModels.find(m => m.includes('2.5-flash')) || availableModels[0]; selectEl.value = best; if (isManualModelMode) toggleModelInputMode(false); statusEl.textContent = `完了: ${availableModels.length}件`; statusEl.className = 'text-xs text-green-600 mt-2'; showToast(`${availableModels.length}件のモデルを取得しました`, 'success'); } catch (e) { console.error(e); statusEl.textContent = '失敗'; statusEl.className = 'text-xs text-red-500 mt-2'; showToast('モデル一覧の取得に失敗しました', 'error'); } finally { btn.disabled = false; } }
+        async function fetchModels() {
+            const apiKey = document.getElementById('apiKeyInput').value.trim();
+            const statusEl = document.getElementById('modelFetchStatus');
+            const selectEl = document.getElementById('modelSelect');
+            const btn = document.getElementById('fetchModelsBtn');
+            if (!apiKey) { showToast('APIキーを入力してください', 'warning'); return; }
+            statusEl.textContent = '取得中(v1beta)...';
+            statusEl.className = 'text-xs text-blue-500 mt-2 animate-pulse';
+            btn.disabled = true;
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`Error: ${res.status}`);
+                const data = await res.json();
+                const allModels = data.models.filter(m => m.supportedGenerationMethods && m.supportedGenerationMethods.includes("generateContent")).map(m => m.name.replace('models/', ''));
+
+                // 表示するモデルの優先順位を定義
+                const targetModels = [
+                    { base: 'gemini-2.0-flash-lite', priority: ['', '-preview'] },
+                    { base: 'gemini-2.0-flash', priority: ['', '-preview'] },
+                    { base: 'gemini-2.5-flash-lite', priority: ['', '-preview'] },
+                    { base: 'gemini-2.5-flash', priority: ['', '-preview'] },
+                    { base: 'gemini-2.5-pro', priority: ['', '-preview'] },
+                    { base: 'gemini-3-flash', priority: ['', '-preview'] },
+                    { base: 'gemini-3-pro', priority: ['-image-preview', '-preview'], showAll: true },
+                ];
+
+                const filteredModels = [];
+                targetModels.forEach(target => {
+                    if (target.showAll) {
+                        // すべての候補を表示（gemini-3-pro）
+                        target.priority.forEach(suffix => {
+                            const modelName = target.base + suffix;
+                            if (allModels.includes(modelName)) {
+                                filteredModels.push(modelName);
+                            }
+                        });
+                    } else {
+                        // 優先順位順に最初に見つかったものだけ表示
+                        for (const suffix of target.priority) {
+                            const modelName = target.base + suffix;
+                            if (allModels.includes(modelName)) {
+                                filteredModels.push(modelName);
+                                break;
+                            }
+                        }
+                    }
+                });
+
+                selectEl.innerHTML = '';
+                filteredModels.forEach(modelName => {
+                    const option = document.createElement('option');
+                    option.value = modelName;
+                    option.textContent = modelName;
+                    if (modelName.includes('gemini-3')) option.textContent += ' 🚀';
+                    else if (modelName.includes('pro')) option.textContent += ' 💎';
+                    else if (modelName.includes('flash')) option.textContent += ' ⚡';
+                    if (modelName.includes('preview')) option.textContent += ' (preview)';
+                    selectEl.appendChild(option);
+                });
+                const best = filteredModels.find(m => m.includes('2.5-flash') && !m.includes('lite')) || filteredModels[0];
+                selectEl.value = best;
+                if (isManualModelMode) toggleModelInputMode(false);
+                statusEl.textContent = `完了: ${filteredModels.length}件`;
+                statusEl.className = 'text-xs text-green-600 mt-2';
+                showToast(`${filteredModels.length}件のモデルを取得しました`, 'success');
+            } catch (e) {
+                console.error(e);
+                statusEl.textContent = '失敗';
+                statusEl.className = 'text-xs text-red-500 mt-2';
+                showToast('モデル一覧の取得に失敗しました', 'error');
+            } finally { btn.disabled = false; }
+        }
         function handleImageSelect(event) { const file = event.target.files[0]; if (!file) return; resizeImage(file).then(resizedBase64 => { currentBase64 = resizedBase64; const imgEl = document.getElementById('previewImage'); imgEl.src = currentBase64; imgEl.classList.remove('hidden'); document.getElementById('uploadPlaceholder').classList.add('hidden'); document.getElementById('removeImageBtn').classList.remove('hidden'); document.getElementById('imageUploadLabel').classList.add('border-blue-500'); checkAnalyzeable(); document.getElementById('resultArea').classList.add('hidden'); }); event.target.value = ''; }
         function removeImage(event) { event.preventDefault(); currentBase64 = null; document.getElementById('previewImage').src = ''; document.getElementById('previewImage').classList.add('hidden'); document.getElementById('uploadPlaceholder').classList.remove('hidden'); document.getElementById('removeImageBtn').classList.add('hidden'); document.getElementById('imageUploadLabel').classList.remove('border-blue-500'); checkAnalyzeable(); }
         function checkAnalyzeable() { const text = document.getElementById('textInput').value.trim(); document.getElementById('analyzeBtn').disabled = !(currentBase64 || text.length > 0); }

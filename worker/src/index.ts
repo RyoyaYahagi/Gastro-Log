@@ -93,16 +93,29 @@ export default {
 
             if (path === '/api/auth/callback') {
                 // OAuth コールバック
+                // Supabase は code を query param で返す場合と hash fragment で返す場合がある
                 const code = url.searchParams.get('code');
+                const errorParam = url.searchParams.get('error');
+                const errorDescription = url.searchParams.get('error_description');
+
+                // エラーがある場合
+                if (errorParam) {
+                    return new Response(`OAuth Error: ${errorParam} - ${errorDescription}`, { status: 400 });
+                }
+
+                // code がない場合（hash fragment で返されている可能性）
                 if (!code) {
-                    return new Response('Missing code', { status: 400 });
+                    // フロントエンドで hash fragment を処理するためにリダイレクト
+                    // デバッグ: 全パラメータを表示
+                    const allParams = Object.fromEntries(url.searchParams.entries());
+                    return new Response(`Missing code. URL params: ${JSON.stringify(allParams)}. Full URL: ${url.toString()}`, { status: 400 });
                 }
 
                 const supabase = getAdminClient(env);
                 const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
                 if (error || !data.session) {
-                    return new Response('Auth failed', { status: 400 });
+                    return new Response(`Auth failed: ${error?.message || 'No session'}`, { status: 400 });
                 }
 
                 // フロントエンドにトークンを渡す

@@ -30,81 +30,64 @@ Supabase Dashboard → **SQL Editor** → 以下を実行:
 
 ---
 
-## 2. Cloudflare Workers デプロイ
+## 2. GitHub Actions 自動デプロイ設定（推奨）
 
-### 2.1 依存関係インストール
+### 2.1 本番用 API_BASE を設定
 
-```bash
-cd /Users/yappa/code/app/gastro/worker
-npm install
-```
-
-### 2.2 シークレット設定
-
-```bash
-npx wrangler secret put SUPABASE_URL
-# 入力: https://fbyrpgjiwqkdxwdmitqh.supabase.co
-
-npx wrangler secret put SUPABASE_ANON_KEY
-# 入力: sb_publishable_u75mxFIQUbB3qgR8t7fX5Q_tmNOMe-c
-
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-# 入力: (service_role key)
-```
-
-### 2.3 デプロイ
-
-```bash
-npx wrangler deploy
-```
-
-デプロイ後、Workers の URL をメモ (例: `https://gastro-log-api.xxx.workers.dev`)
-
-### 2.4 フロントエンドの API_BASE を更新
-
-`index.html` の `API_BASE` を Workers URL に変更:
+`index.html` の `API_BASE` を本番URLに変更:
 
 ```javascript
-const API_BASE = 'https://gastro-log-api.xxx.workers.dev';
+const API_BASE = 'https://gastro-log-api.yhgry.workers.dev';
 ```
+
+### 2.2 GitHub リポジトリの Secrets を設定
+
+リポジトリ → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
+
+| Secret名                    | 値                                                     |
+| --------------------------- | ------------------------------------------------------ |
+| `CLOUDFLARE_API_TOKEN`      | Cloudflare API トークン（Workers と Pages の編集権限） |
+| `CLOUDFLARE_ACCOUNT_ID`     | Cloudflare アカウント ID                               |
+| `SUPABASE_URL`              | `https://fbyrpgjiwqkdxwdmitqh.supabase.co`             |
+| `SUPABASE_ANON_KEY`         | Supabase の anon public key                            |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase の service role key                           |
+
+### 2.3 Cloudflare API トークン作成
+
+1. https://dash.cloudflare.com/profile/api-tokens
+2. **Create Token** → **Edit Cloudflare Workers** テンプレート
+3. **Account Resources**: 対象アカウント
+4. **Zone Resources**: All zones（または対象ゾーン）
+5. **Create Token** → トークンをコピー
+
+### 2.4 デプロイ
+
+```bash
+git add .
+git commit -m "Deploy"
+git push origin main
+```
+
+これで自動的に Pages と Workers がデプロイされます。
 
 ---
 
-## 3. Cloudflare Pages デプロイ
+## 3. 手動デプロイ（オプション）
+
+### 3.1 Workers デプロイ
 
 ```bash
-cd /Users/yappa/code/app/gastro
-npx wrangler pages deploy . --project-name=gastro-log
-```
-
-または GitHub 連携で自動デプロイ設定。
-
----
-
-## 4. wrangler.toml の FRONTEND_URL 更新
-
-Pages の URL が確定したら、`worker/wrangler.toml` を更新:
-
-```toml
-[vars]
-FRONTEND_URL = "https://gastro-log.pages.dev"
-```
-
-再デプロイ:
-
-```bash
-cd /Users/yappa/code/app/gastro/worker
+cd worker
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_ANON_KEY
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
 npx wrangler deploy
 ```
 
----
+### 3.2 Pages デプロイ
 
-## 5. Google OAuth リダイレクト URI 追加
-
-Google Cloud Console で以下を追加:
-
-```
-https://gastro-log-api.xxx.workers.dev/api/auth/callback
+```bash
+npx wrangler pages deploy . --project-name=gastro-log
 ```
 
 ---

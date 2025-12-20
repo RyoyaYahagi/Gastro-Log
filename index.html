@@ -528,6 +528,8 @@
         // ========================================
         // AuthService: 認証管理
         // ========================================
+        const SUPABASE_URL = 'https://fbyrpgjiwqkdxwdmitqh.supabase.co';
+
         class AuthService {
             constructor(apiBase) {
                 this.apiBase = apiBase;
@@ -537,7 +539,24 @@
             }
 
             async init() {
-                // URLからトークンを取得（OAuthコールバック後）
+                // ハッシュフラグメントからトークンを取得（Supabase OAuth コールバック後）
+                if (window.location.hash) {
+                    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+                    if (hashParams.has('access_token')) {
+                        this.accessToken = hashParams.get('access_token');
+                        this.refreshToken = hashParams.get('refresh_token');
+                        localStorage.setItem('access_token', this.accessToken);
+                        localStorage.setItem('refresh_token', this.refreshToken);
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        showToast('ログインしました', 'success');
+                    }
+                    if (hashParams.has('error')) {
+                        showToast(`ログインエラー: ${hashParams.get('error_description') || hashParams.get('error')}`, 'error');
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }
+                }
+
+                // クエリパラメータからもチェック（念のため）
                 const params = new URLSearchParams(window.location.search);
                 if (params.has('access_token')) {
                     this.accessToken = params.get('access_token');
@@ -593,7 +612,10 @@
             }
 
             login() {
-                window.location.href = `${this.apiBase}/api/auth/google`;
+                // Supabase OAuth URL に直接リダイレクト（ハッシュフラグメントでトークンが返る）
+                const redirectTo = window.location.origin + window.location.pathname;
+                const oauthUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
+                window.location.href = oauthUrl;
             }
 
             logout() {

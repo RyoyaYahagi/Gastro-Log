@@ -10,10 +10,12 @@
             "ES2022"
         ],
         "types": [
-            "@cloudflare/workers-types"
+            "@cloudflare/workers-types",
+            "node"
         ]
     },
     "include": [
-        "src/**/*"
+        "src/**/*",
+        "drizzle.config.ts"
     ]
 }

@@ -19,14 +19,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
-        // セッションを取得
-        authClient.getSession().then((result) => {
-            if (result.data) {
-                setSession(result.data)
-                setUser(result.data.user)
+        const fetchSession = async () => {
+            try {
+                const result = await authClient.getSession()
+                if (result.data) {
+                    setSession(result.data)
+                    setUser(result.data.user)
+                }
+            } catch (error) {
+                console.error('Failed to get session:', error)
+            } finally {
+                setIsLoading(false)
             }
-            setIsLoading(false)
-        })
+        }
+
+        // URLに認証パラメータがある場合（Neon Authからのリダイレクト後）
+        const urlParams = new URLSearchParams(window.location.search)
+        const hasAuthCallback = urlParams.has('neon_auth_session_verifier') ||
+            urlParams.has('code') ||
+            urlParams.has('state')
+
+        if (hasAuthCallback) {
+            // パラメータをクリアしてからセッションを取得
+            window.history.replaceState({}, '', window.location.pathname)
+            // 少し待ってからセッションを取得（Neon Authがセッションを設定するのを待つ）
+            setTimeout(fetchSession, 100)
+        } else {
+            fetchSession()
+        }
     }, [])
 
     const signInWithGoogle = async () => {

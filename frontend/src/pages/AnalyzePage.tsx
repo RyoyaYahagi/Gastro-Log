@@ -36,14 +36,26 @@ export function AnalyzePage() {
     }
 
     const handleAnalyze = async () => {
-        await startAnalysis(image, memo)
-        // 解析開始後はフォーム入力のみクリア（画像は残すかどうかUX次第だが、今回はリセット関数に従う）
-        // ただし startAnalysis内では画像クリアしない仕様にしたため、ここでクリアするか検討
-        // 仕様: 解析成功したら画像・メモはクリアし、結果を表示したい
-        setImage(null)
-        setMemo('')
-        if (fileInputRef.current) {
-            fileInputRef.current.value = ''
+        const imageToAnalyze = image
+        const memoToAnalyze = memo
+
+        const result = await startAnalysis(imageToAnalyze, memoToAnalyze)
+
+        if (result.success) {
+            // 解析成功時にログを保存
+            addLog({
+                date: today,
+                image: imageToAnalyze || undefined,
+                memo: memoToAnalyze || undefined,
+                ingredients: result.ingredients,
+            })
+
+            // フォームをクリア
+            setImage(null)
+            setMemo('')
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ''
+            }
         }
     }
 

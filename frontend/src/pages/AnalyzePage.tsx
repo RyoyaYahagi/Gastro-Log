@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { useFoodLogs } from '../hooks/useFoodLogs'
 import { useAnalysis } from '../hooks/useAnalysis'
+import { resizeImage } from '../lib/imageUtils'
 
 export function AnalyzePage() {
     const [image, setImage] = useState<string | null>(null)
@@ -9,13 +10,22 @@ export function AnalyzePage() {
     const { addLog } = useFoodLogs()
     const { isAnalyzing, detectedIngredients, resultMessage, startAnalysis, resetResult } = useAnalysis()
 
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
         if (!file) return
 
         const reader = new FileReader()
-        reader.onload = (e) => {
-            setImage(e.target?.result as string)
+        reader.onload = async (e) => {
+            const originalDataUrl = e.target?.result as string
+            try {
+                // 画像をリサイズして圧縮
+                const resizedDataUrl = await resizeImage(originalDataUrl)
+                setImage(resizedDataUrl)
+            } catch (error) {
+                console.error('Failed to resize image:', error)
+                // リサイズに失敗した場合は元の画像を使用
+                setImage(originalDataUrl)
+            }
         }
         reader.readAsDataURL(file)
     }

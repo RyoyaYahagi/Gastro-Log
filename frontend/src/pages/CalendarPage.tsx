@@ -2,9 +2,12 @@ import { useState } from 'react'
 import { useFoodLogs } from '../hooks/useFoodLogs'
 
 export function CalendarPage() {
-    const [selectedDate, setSelectedDate] = useState<string | null>(null)
     const { getLogsByDate, deleteLog } = useFoodLogs()
     const today = new Date()
+
+    // 今日の日付をデフォルトで選択
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+    const [selectedDate, setSelectedDate] = useState<string | null>(todayStr)
 
     // 月をstateで管理
     const [currentYear, setCurrentYear] = useState(today.getFullYear())

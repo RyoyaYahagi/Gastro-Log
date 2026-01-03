@@ -73,4 +73,23 @@ export const api = {
             body: JSON.stringify({ items }),
         })
     },
+
+    // 食事解析（Gemini API経由）
+    async analyzeFood(token: string, image: string | null, memo: string, model?: string): Promise<string[]> {
+        const res = await fetch(`${API_BASE}/api/analyze`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify({ image, memo, model }),
+        })
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}))
+            throw new Error(errorData.error || 'AI解析に失敗しました')
+        }
+        const data = await res.json()
+        return data.ingredients || []
+    },
 }
+

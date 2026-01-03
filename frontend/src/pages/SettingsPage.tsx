@@ -5,19 +5,15 @@ import { useSafeList } from '../hooks/useSafeList'
 export function SettingsPage() {
     const { user, isLoading, signInWithGoogle, signOut } = useAuth()
     const { safeList, addItem, removeItem } = useSafeList()
-    const [apiKey, setApiKey] = useState('')
     const [model, setModel] = useState('gemini-2.5-flash')
     const [newSafeItem, setNewSafeItem] = useState('')
 
     useEffect(() => {
-        const savedKey = localStorage.getItem('gemini_api_key') || ''
         const savedModel = localStorage.getItem('gemini_model') || 'gemini-2.5-flash'
-        setApiKey(savedKey)
         setModel(savedModel)
     }, [])
 
-    const handleSave = () => {
-        localStorage.setItem('gemini_api_key', apiKey)
+    const handleSaveModel = () => {
         localStorage.setItem('gemini_model', model)
         alert('設定を保存しました')
     }
@@ -50,8 +46,6 @@ export function SettingsPage() {
                                 <p className="text-sm text-gray-500">{user.email}</p>
                             </div>
                         </div>
-
-
 
                         <button
                             onClick={signOut}
@@ -126,30 +120,13 @@ export function SettingsPage() {
                 )}
             </div>
 
-            {/* Gemini API 設定 */}
+            {/* AI モデル設定 */}
             <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6">
                 <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>🤖</span> Gemini API
+                    <span>🤖</span> AI設定
                 </h2>
 
                 <div className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-600 mb-2">API Key</label>
-                        <input
-                            type="password"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            placeholder="AIza..."
-                            className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
-                        />
-                        <p className="text-xs text-gray-400 mt-2">
-                            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
-                                Google AI Studio
-                            </a>
-                            で取得できます
-                        </p>
-                    </div>
-
                     <div>
                         <label className="block text-sm font-medium text-gray-600 mb-2">モデル</label>
                         <select
@@ -157,10 +134,15 @@ export function SettingsPage() {
                             onChange={(e) => setModel(e.target.value)}
                             className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
                         >
-                            <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite ⚡</option>
-                            <option value="gemini-2.0-flash">gemini-2.0-flash ⚡</option>
-                            <option value="gemini-2.5-flash">gemini-2.5-flash ⚡</option>
-                            <option value="gemini-2.5-pro">gemini-2.5-pro 💎</option>
+                            <optgroup label="Gemini 2.5">
+                                <option value="gemini-2.5-flash">gemini-2.5-flash ⚡</option>
+                                <option value="gemini-2.5-pro">gemini-2.5-pro 💎</option>
+                            </optgroup>
+                            <optgroup label="Gemini 2.0">
+                                <option value="gemini-2.0-flash">gemini-2.0-flash ⚡</option>
+                                <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp 🧪</option>
+                                <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite ⚡</option>
+                            </optgroup>
                         </select>
                     </div>
                 </div>
@@ -168,7 +150,7 @@ export function SettingsPage() {
 
             {/* 保存ボタン */}
             <button
-                onClick={handleSave}
+                onClick={handleSaveModel}
                 className="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-4 px-6 rounded-xl transition-all"
             >
                 設定を保存
@@ -176,4 +158,3 @@ export function SettingsPage() {
         </div>
     )
 }
-

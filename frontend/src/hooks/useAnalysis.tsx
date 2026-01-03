@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react'
 import { analyzeFood } from '../lib/gemini'
+import { useAuth } from './useAuth'
 
 type ResultMessage = {
     type: 'success' | 'warning' | 'error'
@@ -29,16 +30,16 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [detectedIngredients, setDetectedIngredients] = useState<string[]>([])
     const [resultMessage, setResultMessage] = useState<ResultMessage>(null)
+    const { getToken, user } = useAuth()
 
     // 解析中かどうかを追跡するref（コンポーネントがアンマウントされても維持）
     const analyzingRef = useRef(false)
 
     const startAnalysis = useCallback(async (image: string | null, memo: string): Promise<AnalysisResult> => {
-        const apiKey = localStorage.getItem('gemini_api_key')
         const model = localStorage.getItem('gemini_model') || 'gemini-2.5-flash'
 
-        if (!apiKey) {
-            setResultMessage({ type: 'error', text: 'Gemini API Key を設定してください' })
+        if (!user) {
+            setResultMessage({ type: 'error', text: 'ログインが必要です' })
             return { success: false, ingredients: [] }
         }
 
@@ -58,7 +59,12 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         setResultMessage(null)
 
         try {
-            const ingredients = await analyzeFood(image, memo, apiKey, model)
+            const token = await getToken()
+            if (!token) {
+                throw new Error('認証トークンを取得できませんでした')
+            }
+
+            const ingredients = await analyzeFood(image, memo, token, model)
             setDetectedIngredients(ingredients)
 
             if (ingredients.length > 0) {
@@ -75,7 +81,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
             analyzingRef.current = false
             setIsAnalyzing(false)
         }
-    }, [])
+    }, [getToken, user])
 
     const resetResult = useCallback(() => {
         setDetectedIngredients([])

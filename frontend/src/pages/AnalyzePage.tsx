@@ -15,7 +15,7 @@ export function AnalyzePage() {
     const fileInputRef = useRef<HTMLInputElement>(null)
     const cameraInputRef = useRef<HTMLInputElement>(null)
     const { addLog } = useFoodLogs()
-    const { isAnalyzing, detectedIngredients, resultMessage, startAnalysis, resetResult } = useAnalysis()
+    const { isAnalyzing, detectedIngredients, resultMessage, startAnalysis } = useAnalysis()
 
     // ストレスレベルの色を取得（1: 緑 → 10: 赤）
     const getStressColor = (level: number, isSelected: boolean) => {
@@ -108,7 +108,6 @@ export function AnalyzePage() {
         if (cameraInputRef.current) {
             cameraInputRef.current.value = ''
         }
-        // Note: resetResult() は呼ばない。解析結果は次の解析まで表示を維持する
     }
 
     return (

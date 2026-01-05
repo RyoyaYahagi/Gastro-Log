@@ -108,7 +108,7 @@ export function AnalyzePage() {
         if (cameraInputRef.current) {
             cameraInputRef.current.value = ''
         }
-        resetResult()
+        // Note: resetResult() は呼ばない。解析結果は次の解析まで表示を維持する
     }
 
     return (

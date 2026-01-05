@@ -11,7 +11,6 @@ export function AnalyzePage() {
     const [sleepMinutes, setSleepMinutes] = useState('')
     const [lifestyleMemo, setLifestyleMemo] = useState('')
     const [showOptions, setShowOptions] = useState(false)
-    const [showActionSheet, setShowActionSheet] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
     const cameraInputRef = useRef<HTMLInputElement>(null)
     const { addLog } = useFoodLogs()
@@ -53,17 +52,10 @@ export function AnalyzePage() {
             }
         }
         reader.readAsDataURL(file)
-        setShowActionSheet(false)
-    }
-
-    const handleCameraCapture = () => {
-        cameraInputRef.current?.click()
-        setShowActionSheet(false)
     }
 
     const handlePhotoLibrary = () => {
         fileInputRef.current?.click()
-        setShowActionSheet(false)
     }
 
     // ローカルタイムゾーンで今日の日付を取得
@@ -159,50 +151,15 @@ export function AnalyzePage() {
                         </svg>
                     </button>
 
-                    {/* クリップアイコン（画像選択） */}
-                    <div className="relative">
-                        <button
-                            onClick={() => setShowActionSheet(!showActionSheet)}
-                            className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                            </svg>
-                        </button>
-
-                        {/* ドロップダウンメニュー */}
-                        {showActionSheet && (
-                            <>
-                                {/* オーバーレイ（クリックで閉じる） */}
-                                <div
-                                    className="fixed inset-0 z-40"
-                                    onClick={() => setShowActionSheet(false)}
-                                />
-                                {/* メニュー本体 */}
-                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden min-w-[220px]">
-                                    <button
-                                        onClick={handleCameraCapture}
-                                        className="w-full py-3 px-4 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 border-b border-gray-100"
-                                    >
-                                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        <span>カメラで撮影</span>
-                                    </button>
-                                    <button
-                                        onClick={handlePhotoLibrary}
-                                        className="w-full py-3 px-4 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3"
-                                    >
-                                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        <span>フォトライブラリ</span>
-                                    </button>
-                                </div>
-                            </>
-                        )}
-                    </div>
+                    {/* クリップアイコン（直接フォトライブラリを開く） */}
+                    <button
+                        onClick={handlePhotoLibrary}
+                        className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                    </button>
 
                     {/* 解析ボタン */}
                     <button

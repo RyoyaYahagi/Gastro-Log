@@ -84,28 +84,16 @@ export const api = {
             headers['Authorization'] = `Bearer ${token}`
         }
 
-        // デバッグ: 送信データを確認
-        console.log('[API analyzeFood] token:', token ? 'present' : 'null')
-        console.log('[API analyzeFood] image size:', image ? `${(image.length / 1024).toFixed(1)}KB` : 'null')
-        console.log('[API analyzeFood] memo:', memo || '(empty)')
-        console.log('[API analyzeFood] model:', model)
-
         const res = await fetch(`${API_BASE}/api/analyze`, {
             method: 'POST',
             headers,
             body: JSON.stringify({ image, memo, model }),
         })
-
-        // デバッグ: レスポンスを確認
-        console.log('[API analyzeFood] response status:', res.status)
-
         if (!res.ok) {
             const errorData = await res.json().catch(() => ({}))
-            console.log('[API analyzeFood] error:', errorData)
             throw new Error(errorData.error || 'AI解析に失敗しました')
         }
         const data = await res.json()
-        console.log('[API analyzeFood] ingredients:', data.ingredients)
         return data.ingredients || []
     },
 }

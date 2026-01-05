@@ -10,9 +10,12 @@ export function AnalyzePage() {
     const [sleepHours, setSleepHours] = useState('')
     const [sleepMinutes, setSleepMinutes] = useState('')
     const [lifestyleMemo, setLifestyleMemo] = useState('')
+    const [showOptions, setShowOptions] = useState(false)
+    const [showActionSheet, setShowActionSheet] = useState(false)
     const fileInputRef = useRef<HTMLInputElement>(null)
+    const cameraInputRef = useRef<HTMLInputElement>(null)
     const { addLog } = useFoodLogs()
-    const { isAnalyzing, detectedIngredients, resultMessage, startAnalysis, resetResult } = useAnalysis()
+    const { isAnalyzing, detectedIngredients, resultMessage, startAnalysis } = useAnalysis()
 
     // ストレスレベルの色を取得（1: 緑 → 10: 赤）
     const getStressColor = (level: number, isSelected: boolean) => {
@@ -50,27 +53,22 @@ export function AnalyzePage() {
             }
         }
         reader.readAsDataURL(file)
+        setShowActionSheet(false)
+    }
+
+    const handleCameraCapture = () => {
+        cameraInputRef.current?.click()
+        setShowActionSheet(false)
+    }
+
+    const handlePhotoLibrary = () => {
+        fileInputRef.current?.click()
+        setShowActionSheet(false)
     }
 
     // ローカルタイムゾーンで今日の日付を取得
     const now = new Date()
     const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-
-    const handleSimpleSave = () => {
-        addLog({
-            date: today,
-            image: image || undefined,
-            memo: memo || undefined,
-            ingredients: [],
-            life: (stressLevel || sleepHours || lifestyleMemo) ? {
-                stress: stressLevel || undefined,
-                sleepTime: sleepHours ? `${sleepHours}h${sleepMinutes ? ` ${sleepMinutes}m` : ''}` : undefined,
-                exercise: lifestyleMemo || undefined,
-            } : undefined,
-        })
-        resetForm()
-        resetResult() // 以前の解析結果もクリア
-    }
 
     const handleAnalyze = async () => {
         const imageToAnalyze = image
@@ -93,11 +91,7 @@ export function AnalyzePage() {
             })
 
             // フォームをクリア
-            setImage(null)
-            setMemo('')
-            if (fileInputRef.current) {
-                fileInputRef.current.value = ''
-            }
+            resetForm()
         }
     }
 
@@ -111,153 +105,207 @@ export function AnalyzePage() {
         if (fileInputRef.current) {
             fileInputRef.current.value = ''
         }
+        if (cameraInputRef.current) {
+            cameraInputRef.current.value = ''
+        }
     }
 
     return (
-        <div className="space-y-6">
-            {/* 画像アップロード */}
-            <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6">
-                <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>📸</span> 食事を記録
-                </h2>
+        <div className="pb-24">
+            {/* メインカード - 翻訳アプリ風UI */}
+            <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 overflow-hidden">
+                {/* ヘッダー部分 */}
+                <div className="px-5 pt-5 pb-3 flex items-center justify-between border-b border-gray-100">
+                    <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                        <span>📸</span> 食事を解析
+                    </h2>
+                </div>
 
-                <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`relative border-2 border-dashed rounded-xl aspect-video flex items-center justify-center cursor-pointer transition-all hover:border-blue-400 hover:bg-blue-50/50 ${image ? 'border-blue-400 bg-blue-50/30' : 'border-gray-200 bg-gray-50/50'
-                        }`}
-                >
-                    {image ? (
-                        <img src={image} alt="プレビュー" className="w-full h-full object-contain rounded-lg" />
-                    ) : (
-                        <div className="text-center text-gray-400">
-                            <div className="text-4xl mb-2">📷</div>
-                            <p className="text-sm">タップして画像を選択</p>
+                {/* 画像プレビュー / プレースホルダー */}
+                {image && (
+                    <div className="p-4">
+                        <div className="relative rounded-xl overflow-hidden bg-gray-50">
+                            <img src={image} alt="プレビュー" className="w-full h-48 object-contain" />
+                            <button
+                                onClick={() => setImage(null)}
+                                className="absolute top-2 right-2 w-8 h-8 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70 transition-colors"
+                            >
+                                ✕
+                            </button>
                         </div>
-                    )}
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageSelect}
-                        className="hidden"
+                    </div>
+                )}
+
+                {/* メモ入力エリア */}
+                <div className="px-5 py-4">
+                    <textarea
+                        value={memo}
+                        onChange={(e) => setMemo(e.target.value)}
+                        placeholder="食事の内容、食べた時間、飲んだもの..."
+                        className="w-full p-0 border-0 resize-none focus:outline-none focus:ring-0 text-gray-700 placeholder-gray-400 bg-transparent min-h-[120px]"
+                        rows={4}
                     />
                 </div>
-            </div>
 
-            {/* 食事メモ入力 */}
-            <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6">
-                <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>🍽️</span> 食事メモ
-                </h2>
-                <p className="text-xs text-gray-400 mb-2">AI解析に使用されます</p>
-                <textarea
-                    value={memo}
-                    onChange={(e) => setMemo(e.target.value)}
-                    placeholder="食事の内容、食べた時間、飲んだもの..."
-                    className="w-full p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all bg-gray-50/50"
-                    rows={2}
-                />
-            </div>
+                {/* 下部ツールバー */}
+                <div className="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+                    {/* オプションボタン */}
+                    <button
+                        onClick={() => setShowOptions(!showOptions)}
+                        className={`p-2 rounded-lg transition-colors ${showOptions ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:bg-gray-100'}`}
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                    </button>
 
-            {/* 生活習慣メモ入力 */}
-            <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6">
-                <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>🏃</span> 運動・生活習慣
-                </h2>
-                <textarea
-                    value={lifestyleMemo}
-                    onChange={(e) => setLifestyleMemo(e.target.value)}
-                    placeholder="散歩30分、ジム、ストレッチ、水2L飲んだ..."
-                    className="w-full p-4 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all bg-gray-50/50"
-                    rows={2}
-                />
-            </div>
-
-            {/* ストレスレベル入力 */}
-            <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6">
-                <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>😰</span> ストレスレベル
-                </h2>
-                <div className="flex justify-between gap-1">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => (
+                    {/* クリップアイコン（画像選択） */}
+                    <div className="relative">
                         <button
-                            key={level}
-                            onClick={() => setStressLevel(stressLevel === level ? null : level)}
-                            className={`flex-1 py-3 rounded-lg text-sm font-bold transition-all ${getStressColor(level, stressLevel === level)
-                                } ${stressLevel === level ? 'text-white shadow-md scale-105' : 'text-gray-600'}`}
+                            onClick={() => setShowActionSheet(!showActionSheet)}
+                            className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
                         >
-                            {level}
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                            </svg>
                         </button>
-                    ))}
+
+                        {/* ドロップダウンメニュー */}
+                        {showActionSheet && (
+                            <>
+                                {/* オーバーレイ（クリックで閉じる） */}
+                                <div
+                                    className="fixed inset-0 z-40"
+                                    onClick={() => setShowActionSheet(false)}
+                                />
+                                {/* メニュー本体 */}
+                                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden min-w-[220px]">
+                                    <button
+                                        onClick={handleCameraCapture}
+                                        className="w-full py-3 px-4 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3 border-b border-gray-100"
+                                    >
+                                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        <span>カメラで撮影</span>
+                                    </button>
+                                    <button
+                                        onClick={handlePhotoLibrary}
+                                        className="w-full py-3 px-4 text-left text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-3"
+                                    >
+                                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        <span>フォトライブラリ</span>
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* 解析ボタン */}
+                    <button
+                        onClick={handleAnalyze}
+                        disabled={isAnalyzing}
+                        className="flex items-center gap-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-medium py-2 px-4 rounded-full shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-sm"
+                    >
+                        {isAnalyzing ? (
+                            <>
+                                <span className="animate-spin text-xs">⏳</span>
+                                <span>解析中</span>
+                            </>
+                        ) : (
+                            <>
+                                <span>解析する</span>
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                                </svg>
+                            </>
+                        )}
+                    </button>
                 </div>
-                <p className="text-xs text-gray-400 mt-2 text-center">
-                    1 = リラックス、10 = 非常にストレスフル
-                </p>
             </div>
 
-            {/* 睡眠時間入力 */}
-            <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-6">
-                <h2 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-                    <span>😴</span> 睡眠時間
-                </h2>
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="number"
-                            inputMode="numeric"
-                            min="0"
-                            max="24"
-                            value={sleepHours}
-                            onChange={(e) => setSleepHours(e.target.value)}
-                            placeholder="0"
-                            className="w-16 p-3 text-center text-lg font-bold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-gray-50/50"
+            {/* オプションセクション（折りたたみ式） */}
+            {showOptions && (
+                <div className="mt-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                    {/* 運動・生活習慣 */}
+                    <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-5">
+                        <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                            <span>🏃</span> 運動・生活習慣
+                        </h3>
+                        <textarea
+                            value={lifestyleMemo}
+                            onChange={(e) => setLifestyleMemo(e.target.value)}
+                            placeholder="散歩30分、ジム、ストレッチ、水2L飲んだ..."
+                            className="w-full p-3 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all bg-gray-50/50 text-sm"
+                            rows={2}
                         />
-                        <span className="text-gray-600 font-medium">時間</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="number"
-                            inputMode="numeric"
-                            min="0"
-                            max="59"
-                            value={sleepMinutes}
-                            onChange={(e) => setSleepMinutes(e.target.value)}
-                            placeholder="0"
-                            className="w-16 p-3 text-center text-lg font-bold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-gray-50/50"
-                        />
-                        <span className="text-gray-600 font-medium">分</span>
+
+                    {/* ストレスレベル */}
+                    <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-5">
+                        <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                            <span>😰</span> ストレスレベル
+                        </h3>
+                        <div className="flex justify-between gap-1">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((level) => (
+                                <button
+                                    key={level}
+                                    onClick={() => setStressLevel(stressLevel === level ? null : level)}
+                                    className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${getStressColor(level, stressLevel === level)
+                                        } ${stressLevel === level ? 'text-white shadow-md scale-105' : 'text-gray-600'}`}
+                                >
+                                    {level}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2 text-center">
+                            1 = リラックス、10 = 非常にストレスフル
+                        </p>
+                    </div>
+
+                    {/* 睡眠時間 */}
+                    <div className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 p-5">
+                        <h3 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                            <span>😴</span> 睡眠時間
+                        </h3>
+                        <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="0"
+                                    max="24"
+                                    value={sleepHours}
+                                    onChange={(e) => setSleepHours(e.target.value)}
+                                    placeholder="0"
+                                    className="w-14 p-2 text-center text-base font-bold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-gray-50/50"
+                                />
+                                <span className="text-gray-600 text-sm font-medium">時間</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min="0"
+                                    max="59"
+                                    value={sleepMinutes}
+                                    onChange={(e) => setSleepMinutes(e.target.value)}
+                                    placeholder="0"
+                                    className="w-14 p-2 text-center text-base font-bold border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-gray-50/50"
+                                />
+                                <span className="text-gray-600 text-sm font-medium">分</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            {/* 解析ボタン */}
-            <div className="flex gap-3">
-                <button
-                    onClick={handleSimpleSave}
-                    className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-4 px-4 rounded-xl transition-all"
-                >
-                    そのまま記録
-                </button>
-                <button
-                    onClick={handleAnalyze}
-                    disabled={isAnalyzing}
-                    className="flex-[2] bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                >
-                    {isAnalyzing ? (
-                        <span className="flex items-center justify-center gap-2">
-                            <span className="animate-spin">⏳</span> 解析中...
-                        </span>
-                    ) : (
-                        <span className="flex items-center justify-center gap-2">
-                            <span>✨</span> 成分解析して記録
-                        </span>
-                    )}
-                </button>
-            </div>
+            )}
 
             {/* 結果メッセージ */}
             {resultMessage && (
-                <div className={`rounded-2xl p-4 ${resultMessage.type === 'success' ? 'bg-green-50 border border-green-200' :
+                <div className={`mt-4 rounded-2xl p-4 ${resultMessage.type === 'success' ? 'bg-green-50 border border-green-200' :
                     resultMessage.type === 'warning' ? 'bg-amber-50 border border-amber-200' :
                         'bg-red-50 border border-red-200'
                     }`}>
@@ -275,7 +323,7 @@ export function AnalyzePage() {
 
             {/* 検出された成分 */}
             {detectedIngredients.length > 0 && (
-                <div className="bg-red-50 rounded-2xl p-4 border border-red-200">
+                <div className="mt-4 bg-red-50 rounded-2xl p-4 border border-red-200">
                     <h3 className="text-sm font-bold text-red-700 mb-2">⚠️ 検出された注意成分</h3>
                     <div className="flex flex-wrap gap-2">
                         {detectedIngredients.map((ing, i) => (
@@ -286,7 +334,23 @@ export function AnalyzePage() {
                     </div>
                 </div>
             )}
+
+            {/* 隠しファイル入力 */}
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+            />
+            <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handleImageSelect}
+                className="hidden"
+            />
         </div>
     )
 }
-

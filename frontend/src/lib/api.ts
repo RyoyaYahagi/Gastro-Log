@@ -74,14 +74,19 @@ export const api = {
         })
     },
 
-    // 食事解析（Gemini API経由）
-    async analyzeFood(token: string, image: string | null, memo: string, model?: string): Promise<string[]> {
+    // 食事解析（Gemini API経由）- 認証オプショナル
+    async analyzeFood(token: string | null, image: string | null, memo: string, model?: string): Promise<string[]> {
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
+        }
+        // トークンがある場合のみAuthorizationヘッダーを追加
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`
+        }
+
         const res = await fetch(`${API_BASE}/api/analyze`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
+            headers,
             body: JSON.stringify({ image, memo, model }),
         })
         if (!res.ok) {

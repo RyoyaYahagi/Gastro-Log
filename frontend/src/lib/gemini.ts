@@ -5,13 +5,10 @@ import { api } from './api'
 export async function analyzeFood(
     imageBase64: string | null,
     memo: string,
-    token: string,
+    token: string | null,
     model: string = 'gemini-2.5-flash'
 ): Promise<string[]> {
-    if (!token) {
-        throw new Error('認証が必要です')
-    }
-
+    // ログインなしでも解析可能（トークンはオプショナル）
     return api.analyzeFood(token, imageBase64, memo, model)
 }
 

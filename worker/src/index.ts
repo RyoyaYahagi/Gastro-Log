@@ -315,10 +315,9 @@ export default {
             // Gemini API プロキシ（SEC-02/03対応）
             // ========================================
             if (path === '/api/analyze' && method === 'POST') {
+                // 解析機能は認証オプショナル（ログインなしでも利用可能）
                 const userId = await verifyAndGetUserId(request.headers.get('Authorization'), env);
-                if (!userId) {
-                    return jsonResponse({ error: 'Unauthorized' }, 401, origin, env);
-                }
+                // userId が null でも処理を継続（ゲストとして解析）
 
                 const body = await request.json();
                 const parseResult = analyzeRequestSchema.safeParse(body);

@@ -30,7 +30,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const [detectedIngredients, setDetectedIngredients] = useState<string[]>([])
     const [resultMessage, setResultMessage] = useState<ResultMessage>(null)
-    const { getToken, user } = useAuth()
+    const { getToken } = useAuth()
 
     // 解析中かどうかを追跡するref（コンポーネントがアンマウントされても維持）
     const analyzingRef = useRef(false)
@@ -38,10 +38,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
     const startAnalysis = useCallback(async (image: string | null, memo: string): Promise<AnalysisResult> => {
         const model = localStorage.getItem('gemini_model') || 'gemini-2.5-flash'
 
-        if (!user) {
-            setResultMessage({ type: 'error', text: 'ログインが必要です' })
-            return { success: false, ingredients: [] }
-        }
+        // ログインチェックを削除：ログインなしでも解析可能
 
         if (!image && !memo) {
             setResultMessage({ type: 'error', text: '画像またはメモを入力してください' })
@@ -59,10 +56,8 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
         setResultMessage(null)
 
         try {
+            // トークンはオプショナル（ログインしていれば取得、していなければnull）
             const token = await getToken()
-            if (!token) {
-                throw new Error('認証トークンを取得できませんでした')
-            }
 
             const ingredients = await analyzeFood(image, memo, token, model)
             setDetectedIngredients(ingredients)
@@ -81,7 +76,7 @@ export function AnalysisProvider({ children }: { children: ReactNode }) {
             analyzingRef.current = false
             setIsAnalyzing(false)
         }
-    }, [getToken, user])
+    }, [getToken])
 
     const resetResult = useCallback(() => {
         setDetectedIngredients([])

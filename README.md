@@ -1,4 +1,4 @@
-# 🍽️ Gastro Log with Gemini
+# 🍽️ Gastro Log 
 
 食事を写真で記録し、Gemini AIで栄養分析を行うPWAアプリケーションです。
 
